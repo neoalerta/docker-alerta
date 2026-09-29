@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
   web:
-    image: alerta/alerta-web
+    image: ghcr.io/neoalerta/alerta-web
     # volumes:
       # - $PWD/config/config.json:/web/config.json
     ports:
@@ -18,7 +18,7 @@ services:
       - ADMIN_KEY=demo-key  # assigned to first user in ADMIN_USERS
       - ADMIN_KEY_MAXAGE=500
       # - NGINX_MAX_BODY_SIZE=42M  # allow larger alerts to be processed by alerta
-      # - PLUGINS=remote_ip,reject,heartbeat,blackout,normalise,enhance
+      # - PLUGINS=remote_ip,reject,heartbeat,blackout
     restart: always
 
   db:

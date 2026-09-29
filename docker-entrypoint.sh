@@ -84,13 +84,13 @@ fi
 
 echo
 echo '# Checking versions.'
-echo Alerta Server ${SERVER_VERSION}
+echo neoalerta image ${IMAGE_VERSION}
 echo Alerta Client ${CLIENT_VERSION}
-echo Alerta WebUI  ${WEBUI_VERSION}
+echo Alerta Server ref ${SERVER_REF}
+echo Alerta WebUI ref ${WEBUI_REF}
 
 nginx -v
 echo uwsgi $(uwsgi --version)
-mongosh --version
 psql --version
 python3 --version
 /venv/bin/pip list

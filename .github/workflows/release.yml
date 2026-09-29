@@ -1,14 +1,20 @@
-name: Push to DockerHub
+name: Release
+
+# Publica a imagem no GHCR da org (ghcr.io/neoalerta/alerta-web). O upstream
+# publicava no DockerHub (alerta/alerta-web), que não é nosso.
 
 on:
   push:
     tags: [ 'v*' ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 env:
-  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-  REPOSITORY_URL: registry.hub.docker.com
-  IMAGE_NAME: alerta/alerta-web
+  REPOSITORY_URL: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/alerta-web
 
 jobs:
   test:
@@ -31,16 +37,11 @@ jobs:
           RELEASE=$(cat VERSION)
           VERSION=${{ github.sha }}
           docker compose
-          -f tests/docker-compose.test.mongodb.yml
+          -f tests/docker-compose.test.postgres.yml
           up
           --build
           --quiet-pull
           --exit-code-from tester
-      - uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-        if: failure()
 
   build:
     name: Build (${{ matrix.platform }})
@@ -64,7 +65,7 @@ jobs:
         with:
           registry: ${{ env.REPOSITORY_URL }}
           username: ${{ github.actor }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Set build metadata
         id: meta
         run: |
@@ -86,12 +87,6 @@ jobs:
           tags: |
             ${{ env.REPOSITORY_URL }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.RELEASE }}-${{ steps.meta.outputs.PLATFORM_TAG }}
 
-      - uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-        if: failure()
-
   manifest:
     name: Create Manifest
     needs: build
@@ -110,7 +105,7 @@ jobs:
         with:
           registry: ${{ env.REPOSITORY_URL }}
           username: ${{ github.actor }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Create and push manifest
         run: |
           RELEASE=${{ steps.meta.outputs.RELEASE }}
@@ -122,9 +117,3 @@ jobs:
               ${REPO}:${RELEASE}-linux-amd64 \
               ${REPO}:${RELEASE}-linux-arm64
           done
-
-      - uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-        if: always()

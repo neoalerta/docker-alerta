@@ -1,3 +1,14 @@
+> **Fork neoalerta.** Esta imagem é montada a partir dos forks
+> [neoalerta/alerta](https://github.com/neoalerta/alerta) (servidor) e
+> [neoalerta/alerta-webui](https://github.com/neoalerta/alerta-webui) (Web UI),
+> não do PyPI nem das releases do upstream. Os commits de cada fork ficam
+> fixados no `Dockerfile` (`SERVER_REF` e `WEBUI_REF`); atualizar a imagem é
+> trocar esses SHAs num PR. Para testar outro commit sem editar o arquivo:
+>
+>     docker build --build-arg SERVER_REF=<sha> --build-arg WEBUI_REF=<sha> -t alerta-web .
+>
+> A imagem publicada fica em `ghcr.io/neoalerta/alerta-web`.
+
 What is Alerta?
 ===============
 
@@ -17,7 +28,7 @@ Then link to the database container when running the `alerta-web` container:
 
     $ export DATABASE_URL=mongodb://db:27017/monitoring
     $ docker run --name alerta-web -e DATABASE_URL=$DATABASE_URL --link alerta-db:db \
-    -d -p <port>:8080 alerta/alerta-web
+    -d -p <port>:8080 ghcr.io/neoalerta/alerta-web
 
 The API endpoint is at:
 
@@ -149,7 +160,7 @@ configuration files instead. For example:
 
     $ docker run -v $PWD/config/alertad.conf:/app/alertad.conf \
       -v $PWD/config/config.json:/web/config.json \
-      -p <port>:8080 alerta/alerta-web
+      -p <port>:8080 ghcr.io/neoalerta/alerta-web
 
 For a full list of server configuration options see https://docs.alerta.io.
 
@@ -182,7 +193,7 @@ and `CLIENT_SECRET` environment variables on the command line as follows:
 Now pass in the defined environment variables to the `docker run` command:
 
     $ docker run --name alerta-web  -e AUTH_PROVIDER=google -e CLIENT_ID=$CLIENT_ID \
-    -e CLIENT_SECRET=$CLIENT_SECRET -d -p <port>:8080 alerta/alerta-web
+    -e CLIENT_SECRET=$CLIENT_SECRET -d -p <port>:8080 ghcr.io/neoalerta/alerta-web
 
 This will allow users to login but will only make it optional. To enforce
 users to login you must also set the `AUTH_REQUIRED` environment variable to
@@ -214,7 +225,7 @@ one command:
 version: '2.1'
 services:
   web:
-    image: alerta/alerta-web
+    image: ghcr.io/neoalerta/alerta-web
     ports:
       - "8080:8080"
     depends_on:
@@ -225,7 +236,7 @@ services:
       - AUTH_REQUIRED=True
       - ADMIN_USERS=admin@alerta.io,devops@alerta.io #default password: alerta
       - ADMIN_KEY=demo-key
-      - PLUGINS=reject,blackout,normalise,enhance
+      - PLUGINS=reject,blackout,heartbeat
     restart: always
   db:
     image: postgres

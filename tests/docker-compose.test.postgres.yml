@@ -22,7 +22,7 @@ services:
       - ADMIN_USERS=admin@alerta.io,devops@alerta.io # default password: alerta
       - ADMIN_KEY=demo-key
       - ADMIN_KEY_MAXAGE=31536000 # 1 year in seconds
-      - PLUGINS=reject,blackout,normalise,enhance
+      - PLUGINS=reject,blackout,heartbeat
       - HK_EXPIRED_DELETE_HRS=39
       - HK_INFO_DELETE_HRS=17
       - HEARTBEAT_SEVERITY=warning
