@@ -2,7 +2,7 @@ version: '3.1'
 
 services:
   web:
-    image: alerta/alerta-web
+    image: ghcr.io/neoalerta/alerta-web
     # volumes:
       # - $PWD/config/config.json:/web/config.json
     ports:

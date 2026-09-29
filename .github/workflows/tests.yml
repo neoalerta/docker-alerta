@@ -7,6 +7,8 @@ on:
 
 env:
   SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  SERVER_REPO: https://github.com/${{ github.repository_owner }}/alerta.git
+  WEBUI_REPO: https://github.com/${{ github.repository_owner }}/alerta-webui.git
 
 jobs:
   test-postgres:
@@ -21,9 +23,16 @@ jobs:
           --ignore DL3008 \
           --ignore DL3059 \
           - < Dockerfile
+      - name: Resolve fork refs
+        id: refs
+        run: |
+          echo "SERVER_REF=$(git ls-remote $SERVER_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
+          echo "WEBUI_REF=$(git ls-remote $WEBUI_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
       - name: Run tests
         id: smoketest
         run: >-
+          SERVER_REF=${{ steps.refs.outputs.SERVER_REF }}
+          WEBUI_REF=${{ steps.refs.outputs.WEBUI_REF }}
           BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           RELEASE=$(cat VERSION)
           VERSION=${{ github.sha }}
@@ -37,7 +46,7 @@ jobs:
         with:
           status: ${{ job.status }}
           steps: ${{ toJson(steps) }}
-        if: always()
+        if: failure()
 
   test-mongodb:
     runs-on: ubuntu-latest
@@ -51,9 +60,16 @@ jobs:
           --ignore DL3008 \
           --ignore DL3059 \
           - < Dockerfile
+      - name: Resolve fork refs
+        id: refs
+        run: |
+          echo "SERVER_REF=$(git ls-remote $SERVER_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
+          echo "WEBUI_REF=$(git ls-remote $WEBUI_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
       - name: Run tests
         id: smoketest
         run: >-
+          SERVER_REF=${{ steps.refs.outputs.SERVER_REF }}
+          WEBUI_REF=${{ steps.refs.outputs.WEBUI_REF }}
           BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           RELEASE=$(cat VERSION)
           VERSION=${{ github.sha }}
@@ -67,4 +83,4 @@ jobs:
         with:
           status: ${{ job.status }}
           steps: ${{ toJson(steps) }}
-        if: always()
+        if: failure()

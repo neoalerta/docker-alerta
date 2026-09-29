@@ -8,6 +8,8 @@ services:
         BUILD_DATE: ${BUILD_DATE}
         RELEASE: ${RELEASE}
         VERSION: ${VERSION}
+        SERVER_REF: ${SERVER_REF:-master}
+        WEBUI_REF: ${WEBUI_REF:-master}
     # image: alerta/alerta-web
     ports:
       - 8080

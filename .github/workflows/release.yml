@@ -1,14 +1,23 @@
-name: Push to DockerHub
+name: Release
+
+# Publica a imagem no GHCR da org (ghcr.io/neoalerta/alerta-web). O upstream
+# publicava no DockerHub (alerta/alerta-web), que não é nosso.
 
 on:
   push:
     tags: [ 'v*' ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-  REPOSITORY_URL: registry.hub.docker.com
-  IMAGE_NAME: alerta/alerta-web
+  REPOSITORY_URL: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/alerta-web
+  SERVER_REPO: https://github.com/${{ github.repository_owner }}/alerta.git
+  WEBUI_REPO: https://github.com/${{ github.repository_owner }}/alerta-webui.git
 
 jobs:
   test:
@@ -24,9 +33,16 @@ jobs:
           --ignore DL3008 \
           --ignore DL3059 \
           - < Dockerfile
+      - name: Resolve fork refs
+        id: refs
+        run: |
+          echo "SERVER_REF=$(git ls-remote $SERVER_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
+          echo "WEBUI_REF=$(git ls-remote $WEBUI_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
       - name: Run tests
         id: smoketest
         run: >-
+          SERVER_REF=${{ steps.refs.outputs.SERVER_REF }}
+          WEBUI_REF=${{ steps.refs.outputs.WEBUI_REF }}
           BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           RELEASE=$(cat VERSION)
           VERSION=${{ github.sha }}
@@ -64,7 +80,12 @@ jobs:
         with:
           registry: ${{ env.REPOSITORY_URL }}
           username: ${{ github.actor }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve fork refs
+        id: refs
+        run: |
+          echo "SERVER_REF=$(git ls-remote $SERVER_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
+          echo "WEBUI_REF=$(git ls-remote $WEBUI_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
       - name: Set build metadata
         id: meta
         run: |
@@ -83,6 +104,8 @@ jobs:
             BUILD_DATE=${{ steps.meta.outputs.BUILD_DATE }}
             RELEASE=${{ steps.meta.outputs.RELEASE }}
             VERSION=${{ steps.meta.outputs.SHORT_SHA }}
+            SERVER_REF=${{ steps.refs.outputs.SERVER_REF }}
+            WEBUI_REF=${{ steps.refs.outputs.WEBUI_REF }}
           tags: |
             ${{ env.REPOSITORY_URL }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.RELEASE }}-${{ steps.meta.outputs.PLATFORM_TAG }}
 
@@ -110,7 +133,7 @@ jobs:
         with:
           registry: ${{ env.REPOSITORY_URL }}
           username: ${{ github.actor }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Create and push manifest
         run: |
           RELEASE=${{ steps.meta.outputs.RELEASE }}
