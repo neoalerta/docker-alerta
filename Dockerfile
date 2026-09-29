@@ -6,6 +6,9 @@ ARG SERVER_REPO=https://github.com/neoalerta/alerta.git
 ARG SERVER_REF=7f9aaa435ca88318e293a697568d8f89bafe8d80
 ARG WEBUI_REPO=https://github.com/neoalerta/alerta-webui.git
 ARG WEBUI_REF=17391b6e1a1af97f91d7df885ab113510b157288
+# Cliente (CLI/SDK), usado por housekeeping e heartbeats: commit da versão 8.5.3.
+ARG CLIENT_REPO=https://github.com/neoalerta/python-alerta-client.git
+ARG CLIENT_REF=b166ba7abb6f12fdd5123c2801462e28fef8660c
 
 FROM node:14-bullseye AS webui
 
@@ -27,6 +30,8 @@ FROM python:3.13-slim-bookworm
 ARG SERVER_REPO
 ARG SERVER_REF
 ARG WEBUI_REF
+ARG CLIENT_REPO
+ARG CLIENT_REF
 
 ENV PYTHONUNBUFFERED 1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
@@ -39,6 +44,7 @@ ARG VERSION
 ENV IMAGE_VERSION=${RELEASE}
 ENV SERVER_REF=${SERVER_REF}
 ENV CLIENT_VERSION=8.5.3
+ENV CLIENT_REF=${CLIENT_REF}
 ENV WEBUI_REF=${WEBUI_REF}
 
 ENV NGINX_WORKER_PROCESSES=1
@@ -97,7 +103,7 @@ COPY requirements-docker.txt /app/
 
 # Dependências fixadas pelo próprio fork do servidor (requirements.txt e
 # requirements-ci.txt, que traz lxml, pysaml2 e python-ldap). Aqui só entra o
-# que é da imagem: uWSGI e o cliente, usado por housekeeping e heartbeats.
+# que é da imagem: uWSGI e o cliente (do fork, no commit CLIENT_REF).
 # hadolint ignore=DL3013
 RUN pip install --no-cache-dir pip virtualenv jinja2 && \
     python3 -m venv /venv && \
@@ -108,7 +114,8 @@ RUN pip install --no-cache-dir pip virtualenv jinja2 && \
     /venv/bin/pip install --no-cache-dir \
       --requirement /tmp/server/requirements.txt \
       --requirement /tmp/server/requirements-ci.txt \
-      --requirement /app/requirements-docker.txt && \
+      --requirement /app/requirements-docker.txt \
+      "alerta @ git+${CLIENT_REPO}@${CLIENT_REF}" && \
     /venv/bin/pip install --no-cache-dir /tmp/server && \
     rm -rf /tmp/server
 ENV PATH $PATH:/venv/bin
