@@ -84,7 +84,7 @@ fi
 
 echo
 echo '# Checking versions.'
-echo Alerta Server ${SERVER_VERSION}
+echo neoalerta image ${IMAGE_VERSION}
 echo Alerta Client ${CLIENT_VERSION}
 echo Alerta Server ref ${SERVER_REF}
 echo Alerta WebUI ref ${WEBUI_REF}
