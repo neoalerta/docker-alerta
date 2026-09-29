@@ -2,11 +2,30 @@
 
 version: 2
 updates:
+  # Imagens base do Dockerfile (python, node): um PR por mês com todas.
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    groups:
+      imagens:
+        patterns: ["*"]
+
+  # requirements-docker.txt (uWSGI). As dependências do servidor vêm do
+  # neoalerta/alerta e são atualizadas lá.
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+    groups:
+      pip:
+        patterns: ["*"]
+
+  # Actions usadas nos workflows: um PR por mês com todas.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    groups:
+      actions:
+        patterns: ["*"]
