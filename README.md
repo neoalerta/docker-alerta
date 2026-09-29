@@ -1,8 +1,9 @@
 > **Fork neoalerta.** Esta imagem é montada a partir dos forks
 > [neoalerta/alerta](https://github.com/neoalerta/alerta) (servidor) e
 > [neoalerta/alerta-webui](https://github.com/neoalerta/alerta-webui) (Web UI),
-> não do PyPI nem das releases do upstream. Escolha o que entra com os
-> build args `SERVER_REF` e `WEBUI_REF` (branch, tag ou SHA; padrão `master`):
+> não do PyPI nem das releases do upstream. Os commits de cada fork ficam
+> fixados no `Dockerfile` (`SERVER_REF` e `WEBUI_REF`); atualizar a imagem é
+> trocar esses SHAs num PR. Para testar outro commit sem editar o arquivo:
 >
 >     docker build --build-arg SERVER_REF=<sha> --build-arg WEBUI_REF=<sha> -t alerta-web .
 >
@@ -235,7 +236,7 @@ services:
       - AUTH_REQUIRED=True
       - ADMIN_USERS=admin@alerta.io,devops@alerta.io #default password: alerta
       - ADMIN_KEY=demo-key
-      - PLUGINS=reject,blackout,normalise,enhance
+      - PLUGINS=reject,blackout,heartbeat
     restart: always
   db:
     image: postgres

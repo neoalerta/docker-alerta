@@ -5,11 +5,6 @@ on:
   pull_request:
     branches: [ master ]
 
-env:
-  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-  SERVER_REPO: https://github.com/${{ github.repository_owner }}/alerta.git
-  WEBUI_REPO: https://github.com/${{ github.repository_owner }}/alerta-webui.git
-
 jobs:
   test-postgres:
     runs-on: ubuntu-latest
@@ -17,22 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Docker Lint
-        id: docker-lint
         run: |
           docker run --rm -i ghcr.io/hadolint/hadolint hadolint \
           --ignore DL3008 \
           --ignore DL3059 \
           - < Dockerfile
-      - name: Resolve fork refs
-        id: refs
-        run: |
-          echo "SERVER_REF=$(git ls-remote $SERVER_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
-          echo "WEBUI_REF=$(git ls-remote $WEBUI_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
       - name: Run tests
-        id: smoketest
         run: >-
-          SERVER_REF=${{ steps.refs.outputs.SERVER_REF }}
-          WEBUI_REF=${{ steps.refs.outputs.WEBUI_REF }}
           BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           RELEASE=$(cat VERSION)
           VERSION=${{ github.sha }}
@@ -42,45 +28,3 @@ jobs:
           --build
           --quiet-pull
           --exit-code-from tester
-      - uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-        if: failure()
-
-  test-mongodb:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v6
-      - name: Docker Lint
-        id: docker-lint
-        run: |
-          docker run --rm -i ghcr.io/hadolint/hadolint hadolint \
-          --ignore DL3008 \
-          --ignore DL3059 \
-          - < Dockerfile
-      - name: Resolve fork refs
-        id: refs
-        run: |
-          echo "SERVER_REF=$(git ls-remote $SERVER_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
-          echo "WEBUI_REF=$(git ls-remote $WEBUI_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
-      - name: Run tests
-        id: smoketest
-        run: >-
-          SERVER_REF=${{ steps.refs.outputs.SERVER_REF }}
-          WEBUI_REF=${{ steps.refs.outputs.WEBUI_REF }}
-          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          RELEASE=$(cat VERSION)
-          VERSION=${{ github.sha }}
-          docker compose
-          -f tests/docker-compose.test.mongodb.yml
-          up
-          --build
-          --quiet-pull
-          --exit-code-from tester
-      - uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-        if: failure()

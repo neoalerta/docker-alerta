@@ -1,10 +1,11 @@
 # Servidor e Web UI vêm dos forks da neoalerta, não do PyPI/releases do upstream.
-# SERVER_REF e WEBUI_REF aceitam branch, tag ou SHA; o CI passa o SHA resolvido
-# para o build ser reprodutível e não reaproveitar cache velho de "master".
+# Os commits ficam fixados aqui: a imagem só muda quando este arquivo muda, e
+# qualquer tag pode ser reconstruída igual. Para atualizar, troque o SHA pelo
+# do master do fork (git ls-remote <repo> refs/heads/master) num PR.
 ARG SERVER_REPO=https://github.com/neoalerta/alerta.git
-ARG SERVER_REF=master
+ARG SERVER_REF=7f9aaa435ca88318e293a697568d8f89bafe8d80
 ARG WEBUI_REPO=https://github.com/neoalerta/alerta-webui.git
-ARG WEBUI_REF=master
+ARG WEBUI_REF=17391b6e1a1af97f91d7df885ab113510b157288
 
 FROM node:14-bullseye AS webui
 
@@ -92,30 +93,25 @@ RUN curl -fsSL https://nginx.org/keys/nginx_signing.key | apt-key add - && \
     apt-get -y autoremove && \
     rm -rf /var/lib/apt/lists/*
 
-# hadolint ignore=DL3008
-RUN curl -fsSL https://www.mongodb.org/static/pgp/server-7.0.asc | apt-key add - && \
-    echo "deb https://repo.mongodb.org/apt/debian bookworm/mongodb-org/7.0 main" | tee /etc/apt/sources.list.d/mongodb-org-7.0.list && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
-    mongodb-mongosh && \
-    apt-get -y clean && \
-    apt-get -y autoremove && \
-    rm -rf /var/lib/apt/lists/*
+COPY requirements-docker.txt /app/
 
-COPY requirements*.txt /app/
-
+# Dependências fixadas pelo próprio fork do servidor (requirements.txt e
+# requirements-ci.txt, que traz lxml, pysaml2 e python-ldap). Aqui só entra o
+# que é da imagem: uWSGI e o cliente, usado por housekeeping e heartbeats.
 # hadolint ignore=DL3013
 RUN pip install --no-cache-dir pip virtualenv jinja2 && \
     python3 -m venv /venv && \
     /venv/bin/pip install --no-cache-dir --upgrade setuptools && \
-    /venv/bin/pip install --no-cache-dir --requirement /app/requirements.txt && \
-    /venv/bin/pip install --no-cache-dir --requirement /app/requirements-docker.txt
+    git init -q /tmp/server && \
+    git -C /tmp/server fetch -q --depth 1 "${SERVER_REPO}" "${SERVER_REF}" && \
+    git -C /tmp/server checkout -q FETCH_HEAD && \
+    /venv/bin/pip install --no-cache-dir \
+      --requirement /tmp/server/requirements.txt \
+      --requirement /tmp/server/requirements-ci.txt \
+      --requirement /app/requirements-docker.txt && \
+    /venv/bin/pip install --no-cache-dir /tmp/server && \
+    rm -rf /tmp/server
 ENV PATH $PATH:/venv/bin
-
-RUN /venv/bin/pip install alerta==${CLIENT_VERSION} "git+${SERVER_REPO}@${SERVER_REF}"
-COPY install-plugins.sh /app/install-plugins.sh
-COPY plugins.txt /app/plugins.txt
-RUN /app/install-plugins.sh
 
 COPY --from=webui /src/dist /web
 

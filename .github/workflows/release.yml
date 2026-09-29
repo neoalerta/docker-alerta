@@ -13,11 +13,8 @@ permissions:
   packages: write
 
 env:
-  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
   REPOSITORY_URL: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/alerta-web
-  SERVER_REPO: https://github.com/${{ github.repository_owner }}/alerta.git
-  WEBUI_REPO: https://github.com/${{ github.repository_owner }}/alerta-webui.git
 
 jobs:
   test:
@@ -33,30 +30,18 @@ jobs:
           --ignore DL3008 \
           --ignore DL3059 \
           - < Dockerfile
-      - name: Resolve fork refs
-        id: refs
-        run: |
-          echo "SERVER_REF=$(git ls-remote $SERVER_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
-          echo "WEBUI_REF=$(git ls-remote $WEBUI_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
       - name: Run tests
         id: smoketest
         run: >-
-          SERVER_REF=${{ steps.refs.outputs.SERVER_REF }}
-          WEBUI_REF=${{ steps.refs.outputs.WEBUI_REF }}
           BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           RELEASE=$(cat VERSION)
           VERSION=${{ github.sha }}
           docker compose
-          -f tests/docker-compose.test.mongodb.yml
+          -f tests/docker-compose.test.postgres.yml
           up
           --build
           --quiet-pull
           --exit-code-from tester
-      - uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-        if: failure()
 
   build:
     name: Build (${{ matrix.platform }})
@@ -81,11 +66,6 @@ jobs:
           registry: ${{ env.REPOSITORY_URL }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Resolve fork refs
-        id: refs
-        run: |
-          echo "SERVER_REF=$(git ls-remote $SERVER_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
-          echo "WEBUI_REF=$(git ls-remote $WEBUI_REPO refs/heads/master | cut -f1)" >> $GITHUB_OUTPUT
       - name: Set build metadata
         id: meta
         run: |
@@ -104,16 +84,8 @@ jobs:
             BUILD_DATE=${{ steps.meta.outputs.BUILD_DATE }}
             RELEASE=${{ steps.meta.outputs.RELEASE }}
             VERSION=${{ steps.meta.outputs.SHORT_SHA }}
-            SERVER_REF=${{ steps.refs.outputs.SERVER_REF }}
-            WEBUI_REF=${{ steps.refs.outputs.WEBUI_REF }}
           tags: |
             ${{ env.REPOSITORY_URL }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.RELEASE }}-${{ steps.meta.outputs.PLATFORM_TAG }}
-
-      - uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-        if: failure()
 
   manifest:
     name: Create Manifest
@@ -145,9 +117,3 @@ jobs:
               ${REPO}:${RELEASE}-linux-amd64 \
               ${REPO}:${RELEASE}-linux-arm64
           done
-
-      - uses: act10ns/slack@v2.1.0
-        with:
-          status: ${{ job.status }}
-          steps: ${{ toJson(steps) }}
-        if: always()
