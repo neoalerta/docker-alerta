@@ -3,9 +3,9 @@
 # qualquer tag pode ser reconstruída igual. Para atualizar, troque o SHA pelo
 # do master do fork (git ls-remote <repo> refs/heads/master) num PR.
 ARG SERVER_REPO=https://github.com/neoalerta/alerta.git
-ARG SERVER_REF=7f9aaa435ca88318e293a697568d8f89bafe8d80
+ARG SERVER_REF=cb50259aea1188d038cceac8fc550fcee793bb49
 ARG WEBUI_REPO=https://github.com/neoalerta/alerta-webui.git
-ARG WEBUI_REF=17391b6e1a1af97f91d7df885ab113510b157288
+ARG WEBUI_REF=b8648b2fae633b09351e5fe593d6fb3899c6ec5b
 # Cliente (CLI/SDK), usado por housekeeping e heartbeats: commit da versão 8.5.3.
 ARG CLIENT_REPO=https://github.com/neoalerta/python-alerta-client.git
 ARG CLIENT_REF=b166ba7abb6f12fdd5123c2801462e28fef8660c
